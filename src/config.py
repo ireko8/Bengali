@@ -28,7 +28,7 @@ class Config():
         self.mixup = True
         self.mixup_prob = 1
         self.alpha = 0.7
-        self.beta = 0.7
+        self.beta = 0.2
 
         self.augmix = False
         self.augmix_prob = 1
