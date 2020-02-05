@@ -40,6 +40,43 @@ class BengalDataset(Dataset):
         mask = mask > 0.1
         mask_array[label.astype(bool)] = mask.T
         return mask_array.astype(np.float32)
+
+    def normalize(self, image):
+        return (image - 0.05503) / 0.1722
+
+    def augmix(self, image, width=3, depth=1, alpha=1.):
+        """Perform AugMix augmentations and compute mixture.
+        Args:
+        image: Raw input image as float32 np.ndarray of shape (h, w, c)
+        severity: Severity of underlying augmentation operators (between 1 to 10).
+        width: Width of augmentation chain
+        depth: Depth of augmentation chain. -1 enables stochastic depth uniformly
+        from [1, 3]
+        alpha: Probability coefficient for Beta and Dirichlet distributions.
+        Returns:
+        mixed: Augmented and mixed image.
+        """
+        ws = np.float32(
+            np.random.dirichlet([alpha] * width))
+        m = np.float32(np.random.beta(alpha, alpha))
+
+        mix = np.zeros_like(np.moveaxis(image, -1, 0))
+        
+        for i in range(width):
+            image_aug = image.copy()
+            depth = depth if depth > 0 else np.random.randint(1, 4)
+            for _ in range(depth):
+                op = np.random.choice(self.augment)
+                image_aug = op(image=image_aug)['image']
+                
+                if image_aug.shape[0] != 1:
+                    image_aug = np.moveaxis(image_aug, -1, 0)
+            # Preprocessing commutes since all coefficients are convex
+            mix += ws[i] * self.normalize(image_aug)
+
+        image = np.moveaxis(image, -1, 0)
+        mixed = (1 - m) * self.normalize(image) + m * mix
+        return mixed
         
     def __len__(self):
         return len(self.metadata)
@@ -48,18 +85,22 @@ class BengalDataset(Dataset):
         sample = dict()
         image, row_label = self.load_image(index)
         
-        if conf.mask and self.test != "test":
+        if conf.mask and self.test == "train":
             sample["mask"] = self.mask_target(image, conf.mask_size,
                                               row_label.grapheme_root)
         
         image = image[:, :, np.newaxis] / 255
         
-        if self.augment:
-            image = self.augment(image=image)['image']
-            image = np.moveaxis(image, -1, 0)
+        if self.augment and self.test == "train":
+            if conf.augmix:
+                sample["mix1"] = self.augmix(image)
+                sample["mix2"] = self.augmix(image)
+            else:
+                image = self.augment(image=image)['image']
 
         # image = (image - 0.06923) / 0.2052  # normalize
-        image = (image - 0.05503) / 0.1722
+        image = np.moveaxis(image, -1, 0)
+        image = self.normalize(image)
         
         if self.test != "test":
             label = [

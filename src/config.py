@@ -24,10 +24,15 @@ class Config():
 
         self.mask = False
         self.mask_size = (40, 64)        
+
+        self.mixup = True
+        self.mixup_prob = 1
         self.alpha = 0.7
         self.beta = 0.7
-        self.mixup = True
-        self.mixup_prob = 0.5
+
+        self.augmix = False
+        self.augmix_prob = 1
+
         self.init_lr = 1e-3
         self.eta_min = 1e-6
         self.num_workers = 16 if home else 4

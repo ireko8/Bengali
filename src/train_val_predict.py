@@ -44,9 +44,8 @@ def cutmix_data(data, target):
 def criterion_for_each_target(criterion):
     def new_criterion(pred, labels):
         loss = 0
-        batch_size = len(labels)
         for i, px in enumerate(pred):
-            loss_i = criterion[i](px, labels[:, i]) / batch_size
+            loss_i = criterion[i](px, labels[:, i])  # / batch_size
             loss += loss_i
         return loss
     return new_criterion
@@ -61,9 +60,9 @@ def calc_loss(pred, labels, criterion):
         pred_probs.append(px.softmax(dim=1).cpu().data.numpy() / pred_len)
         pred_class.append(px.argmax(dim=1).cpu().data.numpy())
         if isinstance(criterion, list):
-            loss_i = criterion[i](px, labels[:, i]) / pred_len
+            loss_i = criterion[i](px, labels[:, i])  # / pred_len
         else:
-            loss_i = criterion(px, labels[:, i]) / pred_len
+            loss_i = criterion(px, labels[:, i])  # / pred_len
         loss += loss_i
     return loss, pred_probs, np.stack(pred_class, axis=1)
 
@@ -87,9 +86,37 @@ def mixup_data(x, y, use_cuda=True):
     return mixed_x, y_a, y_b, lam
 
 
+def cutmix_loss(criterion, pred, y_a, y_b, lam):
+    loss = 0
+    for i in range(3):
+        p_i = pred[i]
+        one_hot = torch.zeros(p_i.size(), device=conf.device_name)
+        y_ai = one_hot.scatter_(1, y_a[:, i].view(-1, 1), 1)
+        one_hot = torch.zeros(p_i.size(), device=conf.device_name)
+        y_bi = one_hot.scatter_(1, y_b[:, i].view(-1, 1), 1)
+        y_new = lam * y_ai + lam * y_bi
+        loss += criterion[i](p_i, y_new)
+    return loss
+
+
 def mixup_criterion(criterion, pred, y_a, y_b, lam):
     criterion = criterion_for_each_target(criterion)
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+
+def augmix_loss(orig_loss, pred_orig, pred_m1, pred_m2):
+    
+    loss = orig_loss
+    for i in range(3):
+        p_orig = pred_orig[i].softmax(dim=1)
+        p_m1 = pred_m1[i].softmax(dim=1)
+        p_m2 = pred_m2[i].softmax(dim=1)
+    
+        p_mixture = torch.clamp((p_orig + p_m1 + p_m2) / 3., 1e-7, 1).log()
+        loss += (F.kl_div(p_mixture, p_orig, reduction='batchmean') +
+                 F.kl_div(p_mixture, p_m1, reduction='batchmean') +
+                 F.kl_div(p_mixture, p_m2, reduction='batchmean')) / 3
+    return loss
 
 
 def weighted_macro_recall(trues, preds):
@@ -122,6 +149,7 @@ def train(model,
         augment=aug)
 
     running_loss = 0.0
+    ratio = 1
     all_trues = list()
     all_preds = list()
 
@@ -134,12 +162,21 @@ def train(model,
         trues = labels.cpu().data.numpy()
         all_trues.append(trues)
 
-        if conf.mixup and np.random.random() < conf.mixup_prob:
+        if conf.augmix and np.random.random() < conf.augmix_prob:
+            mix1 = sample['mix1'].to(device)
+            mix2 = sample['mix2'].to(device)
+            outputs = model(inputs)
+            mix1 = model(inputs)
+            mix2 = model(inputs)
+            loss, _, pred_class = calc_loss(mix1, labels, criterion)
+            loss = augmix_loss(loss, outputs, mix1, mix2)            
+        elif conf.mixup and np.random.random() < conf.mixup_prob:
             inputs, ta, tb, lam = cutmix_data(inputs, labels)
             outputs = model(inputs)
             loss_a, _, pred_class = calc_loss(outputs, ta, criterion)
             loss_b, _, _ = calc_loss(outputs, tb, criterion)
-            loss = lam * loss_a + (1-lam) * loss_b            
+            loss = lam * loss_a + (1-lam) * loss_b
+            # loss = cutmix_loss(criterion, outputs, ta, tb, lam)
         else:
             outputs = model(inputs)            
             loss, _, pred_class = calc_loss(outputs, labels, criterion)
@@ -205,6 +242,7 @@ def validate(model, val_df, val_images,
             outputs = model(inputs)
             labels = samples['label'].to(device)
 
+            outputs = model(inputs)            
             loss, _, pred_class = calc_loss(outputs, labels, criterion)
             all_preds.append(pred_class)            
             all_trues.append(labels.cpu().data.numpy())

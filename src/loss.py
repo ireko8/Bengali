@@ -39,31 +39,42 @@ class LabelSmoothedCE(nn.Module):
 
 class RecallLoss(nn.Module):
 
-    def __init__(self):
+    def __init__(self, lam=0.1):
         super(RecallLoss, self).__init__()
-        self.sub_loss = nn.CrossEntropyLoss()
+        self.sub_loss = F.cross_entropy
+        self.lam = lam
 
     def forward(self, preds, trues):
-        preds = torch.softmax(preds, dim=1)
+        p = torch.softmax(preds, dim=1)
         one_hot = torch.zeros(preds.size(), device=conf.device_name)
-        trues_oh = one_hot.scatter_(1, trues.view(-1, 1), 1)
-        tp = preds * trues_oh
-        recall = tp.sum(dim=0) / (trues_oh.sum(dim=0) + 1e-8)
-        return recall.mean() + self.sub_loss(preds, trues)
+        trues = one_hot.scatter_(1, trues.view(-1, 1), 1)
+        tp = trues * p
+        recall = tp.sum(dim=0) / (trues.sum(dim=0) + 1e-8)
+        precision = tp.sum(dim=0) / (p.sum(dim=0) + 1e-8)
+        f1 = 2 * recall * precision / (precision + recall + 1e-8)
+        return f1.sum() + self.sub_loss(preds, trues).mean()
 
 
-class FocalLoss(nn.Module):
-
-    def __init__(self, gamma=0.5, eps=1e-7):
-        super(FocalLoss, self).__init__()
+class ReducedFocalLoss(nn.Module):
+    def __init__(self, gamma=2, eps=1e-7, th=0.5):
+        super(ReducedFocalLoss, self).__init__()
         self.gamma = gamma
         self.eps = eps
-        self.ce = nn.CrossEntropyLoss()
+        self.th = th
 
     def forward(self, input, target):
-        logp = self.ce(input, target)
-        p = torch.exp(-logp)
-        loss = (1 - p) ** self.gamma * logp
+        logit = F.softmax(input, dim=1)
+        logit = logit.clamp(self.eps, 1. - self.eps)
+        logit_ls = torch.log(logit)
+        loss = F.nll_loss(logit_ls, target, reduction="none")
+        view = target.size() + (1,)
+        index = target.view(*view)
+        pt = logit.gather(1, index).squeeze(1)
+        factor = (1 - pt) ** self.gamma 
+        factor /= self.th ** self.gamma
+        factor = torch.where(pt > self.th, factor, torch.ones_like(factor))
+        loss = loss * factor
+
         return loss.mean()
 
 

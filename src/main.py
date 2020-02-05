@@ -9,9 +9,9 @@ import pandas as pd
 from dataset import val_split
 from utils import setup, count_parameter, get_lr, load_csv, now
 # from scheduler import CosineLR
-from loss import OnlineHardExampleMining
+from loss import OnlineHardExampleMining, ReducedFocalLoss
 from train_val_predict import train, validate, predict
-from augment import train_transform, valid_transform
+from augment import augmix_transform, train_transform, valid_transform
 from models.resnet import ResNet
 from models.densenet import DenseNet
 from models.efficientnet import EfficientNet
@@ -57,7 +57,7 @@ def train_model(train_df,
     # )
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, 'max',
-        patience=5, threshold=0.001,
+        patience=5, threshold=0.0005,
         threshold_mode="abs",
     )
     
@@ -145,8 +145,7 @@ def main():
             model_ft = EfficientNet(conf, arch_name=conf.arch)
 
         criterion = [
-            OnlineHardExampleMining(
-                nn.CrossEntropyLoss(reduction="none")),
+            ReducedFocalLoss(),
             nn.CrossEntropyLoss(),
             nn.CrossEntropyLoss()
         ]
