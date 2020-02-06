@@ -69,15 +69,14 @@ class ResNet(nn.Module):
             x = self.base_model.bn1(x)
             x = self.base_model.relu(x)
 
-        x = self.base_model.layer1(x)
-        x = self.base_model.layer2(x)
-        x = self.base_model.layer3(x)
-        x = self.base_model.layer4(x)
+        l1 = self.base_model.layer1(x)
+        l2 = self.base_model.layer2(l1)
+        l3 = self.base_model.layer3(l2)
+        l4 = self.base_model.layer4(l3)
 
         # avgpool = self.base_model.avgpool(x).view(-1, self.dim_feats)
         # maxpool = self.base_model.maxpool(x).view(-1, self.dim_feats)        
-        x = self.pooling(x).view(-1, self.dim_feats)
-        # x = torch.cat([avgpool, maxpool], 1)
+        x = self.pooling(l4).view(-1, self.dim_feats)
 
         gr = self.fc_gr(x)
         vd = self.fc_vd(x)

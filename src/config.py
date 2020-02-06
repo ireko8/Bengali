@@ -26,9 +26,9 @@ class Config():
         self.mask_size = (40, 64)        
 
         self.mixup = True
-        self.mixup_prob = 1
+        self.mixup_prob = 0.5
         self.alpha = 0.7
-        self.beta = 0.2
+        self.beta = 0.7
 
         self.augmix = False
         self.augmix_prob = 1

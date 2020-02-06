@@ -57,7 +57,7 @@ def train_model(train_df,
     # )
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, 'max',
-        patience=5, threshold=0.0005,
+        patience=5, threshold=0.001,
         threshold_mode="abs",
     )
     
@@ -134,10 +134,8 @@ def main():
             continue
 
         if "resnet" in conf.arch or "resnext" in conf.arch:
-            # model_ft = FPResNet(conf)
             model_ft = ResNet(conf, arch_name=conf.arch,
                               input_size=conf.image_size)
-            # model_ft = AttentionResNet(conf, model_ft)
         elif "densenet" in conf.arch:
             model_ft = DenseNet(conf, arch_name=conf.arch,
                                 input_size=conf.image_size)
@@ -145,7 +143,7 @@ def main():
             model_ft = EfficientNet(conf, arch_name=conf.arch)
 
         criterion = [
-            ReducedFocalLoss(),
+            nn.CrossEntropyLoss(),
             nn.CrossEntropyLoss(),
             nn.CrossEntropyLoss()
         ]
