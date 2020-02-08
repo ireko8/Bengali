@@ -46,8 +46,8 @@ class ResNet(nn.Module):
                                               kernel_size=7, stride=2, padding=3,
                                               bias=False)
 
-        self.base_model.avgpool = nn.AvgPool2d(kernel_size=ksize)
-        self.base_model.maxpool = nn.MaxPool2d(kernel_size=ksize)
+        # self.base_model.avgpool = nn.AvgPool2d(kernel_size=ksize)
+        # self.base_model.maxpool = nn.MaxPool2d(kernel_size=ksize)
         self.pooling = GeM()
 
         if self.se:
@@ -55,9 +55,10 @@ class ResNet(nn.Module):
         else:
             self.dim_feats = self.base_model.fc.in_features  # = 2048
 
-        self.fc_gr = Head(self.dim_feats, conf.gr_size)
-        self.fc_vd = Head(self.dim_feats, conf.vd_size)
-        self.fc_cd = Head(self.dim_feats, conf.cd_size)
+        head_input_size = self.dim_feats
+        self.fc_gr = Head(head_input_size, conf.gr_size)
+        self.fc_vd = Head(head_input_size, conf.vd_size)
+        self.fc_cd = Head(head_input_size, conf.cd_size)
         self.out_size = ksize
 
     def forward(self, data):
@@ -74,8 +75,9 @@ class ResNet(nn.Module):
         l3 = self.base_model.layer3(l2)
         l4 = self.base_model.layer4(l3)
 
-        # avgpool = self.base_model.avgpool(x).view(-1, self.dim_feats)
-        # maxpool = self.base_model.maxpool(x).view(-1, self.dim_feats)        
+        # avgpool = self.base_model.avgpool(l4).view(-1, self.dim_feats)
+        # maxpool = self.base_model.maxpool(l4).view(-1, self.dim_feats)
+        # x = torch.cat([avgpool, maxpool], dim=1)
         x = self.pooling(l4).view(-1, self.dim_feats)
 
         gr = self.fc_gr(x)

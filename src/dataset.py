@@ -131,7 +131,7 @@ def val_split(df, images, val_size=0.2, fold=0, seed=71):
 
 
 def worker_init_fn(worker_id):                                                 
-    np.random.seed(conf.seed*2 + worker_id)
+    np.random.seed(conf.seed + worker_id)
 
 
 def make_loader(df,
@@ -152,14 +152,15 @@ def make_loader(df,
     if test == "train":
         drop_last = True
         if conf.weighted_sample:
-            class_count = df.diagnosis.value_counts()
+            class_count = df.grapheme_root.value_counts()
             class_count = 1 / class_count
-            df['weight'] = df.diagnosis.map(class_count)
+            df['weight'] = df.grapheme_root.map(class_count)
             sampler = WeightedRandomSampler(df.weight, len(df))
+            shuffle=False
     else:
         drop_last = False
     loader = DataLoader(
-        ds, batch_size=batch_size, # shuffle=shuffle,
+        ds, batch_size=batch_size, shuffle=shuffle,
         num_workers=conf.num_workers,
         sampler=sampler,
         drop_last=drop_last)

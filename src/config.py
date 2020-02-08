@@ -10,7 +10,7 @@ class Config():
         self.npy = True
         
         self.device_name = 'cuda:0'
-        self.weighted_sample = False
+        self.weighted_sample = True
         self.image_size = (137, 236)        
         self.n_splits = 5
         self.fold = 0

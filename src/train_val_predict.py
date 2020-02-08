@@ -60,10 +60,11 @@ def calc_loss(pred, labels, criterion):
         pred_probs.append(px.softmax(dim=1).cpu().data.numpy() / pred_len)
         pred_class.append(px.argmax(dim=1).cpu().data.numpy())
         if isinstance(criterion, list):
-            loss_i = criterion[i](px, labels[:, i])  # / pred_len
+            loss_i = criterion[i](px, labels[:, i])
         else:
-            loss_i = criterion(px, labels[:, i])  # / pred_len
-        loss += loss_i
+            loss_i = criterion(px, labels[:, i]) 
+        w = 2 if i == 0 else 1
+        loss += loss_i * w
     return loss, pred_probs, np.stack(pred_class, axis=1)
 
 
@@ -149,7 +150,6 @@ def train(model,
         augment=aug)
 
     running_loss = 0.0
-    ratio = 1
     all_trues = list()
     all_preds = list()
 
@@ -162,7 +162,8 @@ def train(model,
         trues = labels.cpu().data.numpy()
         all_trues.append(trues)
 
-        if conf.augmix and np.random.random() < conf.augmix_prob:
+        rand = np.random.random()
+        if conf.augmix and rand < conf.augmix_prob:
             mix1 = sample['mix1'].to(device)
             mix2 = sample['mix2'].to(device)
             outputs = model(inputs)
@@ -170,13 +171,12 @@ def train(model,
             mix2 = model(inputs)
             loss, _, pred_class = calc_loss(mix1, labels, criterion)
             loss = augmix_loss(loss, outputs, mix1, mix2)            
-        elif conf.mixup and np.random.random() < conf.mixup_prob:
+        elif conf.mixup and rand < conf.mixup_prob:
             inputs, ta, tb, lam = cutmix_data(inputs, labels)
             outputs = model(inputs)
             loss_a, _, pred_class = calc_loss(outputs, ta, criterion)
             loss_b, _, _ = calc_loss(outputs, tb, criterion)
             loss = lam * loss_a + (1-lam) * loss_b
-            # loss = cutmix_loss(criterion, outputs, ta, tb, lam)
         else:
             outputs = model(inputs)            
             loss, _, pred_class = calc_loss(outputs, labels, criterion)
