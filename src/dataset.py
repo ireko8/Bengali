@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from sklearn.model_selection import KFold
+from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 
 from config import conf
@@ -115,8 +116,18 @@ class BengalDataset(Dataset):
     
 
 def val_split(df, images, val_size=0.2, fold=0, seed=71):
-    mskf = KFold(n_splits=int(1 / val_size), shuffle=True, random_state=conf.seed)
-    splitter = mskf.split(df.index)
+    if conf.stratify == "random":
+        mskf = KFold(n_splits=int(1 / val_size), shuffle=True,
+                     random_state=conf.seed)
+    elif conf.stratify == "multilabel":
+        mskf = MultilabelStratifiedKFold(n_splits=int(1 / val_size),
+                                         shuffle=True, random_state=conf.seed)
+    else:
+        raise NotImplementedError
+
+    y = df[["grapheme_root", "vowel_diacritic", "consonant_diacritic"]]
+    splitter = mskf.split(df.index, y)
+
     for _ in range(fold + 1):
         tr_ind, te_ind = next(splitter)
     train_df = df.iloc[tr_ind].reset_index(drop=True)
