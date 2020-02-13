@@ -13,7 +13,7 @@ class Config():
         self.weighted_sample = True
         self.image_size = (137, 236)        
 
-        self.stratify = "multilabel"
+        self.stratify = "random"
         self.n_splits = 5
         self.fold = 0
         self.num_epoch = 60
@@ -35,7 +35,7 @@ class Config():
         self.augmix = False
         self.augmix_prob = 1
 
-        self.init_lr = 1e-3
+        self.init_lr = 2e-4
         self.eta_min = 1e-6
         self.num_workers = 16 if home else 4
         self.classes_num = 1

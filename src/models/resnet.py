@@ -13,7 +13,7 @@ class ResNet(nn.Module):
     def __init__(self,
                  conf,
                  arch_name='resnet18',
-                 input_channel=1,
+                 input_channel=3,
                  input_size=224,
                  pretrained=False):
         super(ResNet, self).__init__()

@@ -57,7 +57,7 @@ def train_model(train_df,
     # )
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, 'max',
-        patience=5, threshold=0.001,
+        patience=10, threshold=0.001,
         threshold_mode="abs",
     )
     

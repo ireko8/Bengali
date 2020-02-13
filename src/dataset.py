@@ -92,12 +92,14 @@ class BengalDataset(Dataset):
         
         image = image[:, :, np.newaxis] / 255
         
-        if self.augment and self.test == "train":
+        if self.augment:
             if conf.augmix:
                 sample["mix1"] = self.augmix(image)
                 sample["mix2"] = self.augmix(image)
             else:
-                image = self.augment(image=image)['image']
+                images = [self.augment(image=image)['image']
+                          for _ in range(3)]
+                image = np.concatenate(images, axis=-1)
 
         # image = (image - 0.06923) / 0.2052  # normalize
         image = np.moveaxis(image, -1, 0)

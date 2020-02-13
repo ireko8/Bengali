@@ -9,7 +9,7 @@ from config import conf
 
 HEIGHT = 137
 WIDTH = 236
-width, height = (224, 224)
+width, height = conf.image_size
 train_images = pd.read_parquet("input/train.parquet")
 test_images = pd.read_parquet("input/test.parquet")
 
@@ -47,7 +47,7 @@ def resize(images, index):
     image = 255 - row_image.drop('image_id').values.astype(np.uint8).reshape(137, 236)
     # image = cv2.resize(image , conf.image_size)
     image = (image*(255.0/image.max())).astype(np.uint8)
-    image = crop_resize(image)
+    # image = crop_resize(image)
     return image
 
 
