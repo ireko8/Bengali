@@ -141,6 +141,9 @@ def main():
                                 input_size=conf.image_size)
         elif "efficientnet" in conf.arch:
             model_ft = EfficientNet(conf, arch_name=conf.arch)
+            model_ft.load_state_dict(
+                torch.load("result/baseline_2020_02_15_02_03_55/model_0.pkl")
+            )
 
         criterion = [
             nn.CrossEntropyLoss(),

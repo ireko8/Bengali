@@ -9,7 +9,7 @@ class EfficientNet(nn.Module):
     def __init__(self,
                  conf,
                  arch_name='efficientnet-b3',
-                 input_channel=1,
+                 input_channel=3,
                  pretrained=True):
         super(EfficientNet, self).__init__()
 
