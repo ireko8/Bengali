@@ -8,10 +8,9 @@ import pandas as pd
 
 from dataset import val_split
 from utils import setup, count_parameter, get_lr, load_csv, now
-# from scheduler import CosineLR
-from loss import OnlineHardExampleMining, ReducedFocalLoss
+from loss import LabelSmoothedCE
 from train_val_predict import train, validate, predict
-from augment import augmix_transform, train_transform, valid_transform
+from augment import train_transform, valid_transform
 from models.resnet import ResNet
 from models.densenet import DenseNet
 from models.efficientnet import EfficientNet
@@ -57,7 +56,7 @@ def train_model(train_df,
     # )
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, 'max',
-        patience=10, threshold=0.001,
+        patience=30, threshold=0.001,
         threshold_mode="abs",
     )
     
@@ -136,14 +135,14 @@ def main():
         if "resnet" in conf.arch or "resnext" in conf.arch:
             model_ft = ResNet(conf, arch_name=conf.arch,
                               input_size=conf.image_size)
+            model_ft.load_state_dict(
+                torch.load("result/baseline_2020_02_21_14_28_53/model_0.pkl")
+            )
         elif "densenet" in conf.arch:
             model_ft = DenseNet(conf, arch_name=conf.arch,
                                 input_size=conf.image_size)
         elif "efficientnet" in conf.arch:
             model_ft = EfficientNet(conf, arch_name=conf.arch)
-            model_ft.load_state_dict(
-                torch.load("result/baseline_2020_02_15_02_03_55/model_0.pkl")
-            )
 
         criterion = [
             nn.CrossEntropyLoss(),

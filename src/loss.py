@@ -34,7 +34,7 @@ class LabelSmoothedCE(nn.Module):
 
         logp = F.log_softmax(x, dim=1)
         loss = torch.sum(-logp * one_hot, dim=1)
-        return loss.sum()
+        return loss.mean()
         
 
 class RecallLoss(nn.Module):
@@ -108,5 +108,3 @@ class ArcFaceLoss(nn.modules.Module):
         gamma = 1
         loss = (loss1 + gamma*loss2) / (1+gamma)
         return loss
-
-
