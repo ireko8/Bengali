@@ -49,6 +49,7 @@ def train_model(train_df,
     log.info(
         f"Scheduler: CosineLR, period={conf.period}")
     train_ds, val_ds, train_images, val_images = ds['train'], ds['val'], ds['train_images'], ds['val_images']
+    val_ds.to_csv("val_index.csv")
 
     # scheduler = optim.lr_scheduler.CyclicLR(
     #     optimizer, conf.eta_min, conf.init_lr, cycle_momentum=False,
@@ -135,9 +136,6 @@ def main():
         if "resnet" in conf.arch or "resnext" in conf.arch:
             model_ft = ResNet(conf, arch_name=conf.arch,
                               input_size=conf.image_size)
-            model_ft.load_state_dict(
-                torch.load("result/baseline_2020_02_21_14_28_53/model_0.pkl")
-            )
         elif "densenet" in conf.arch:
             model_ft = DenseNet(conf, arch_name=conf.arch,
                                 input_size=conf.image_size)

@@ -13,10 +13,10 @@ augmix_transform = [
 train_transform = Compose([
     ShiftScaleRotate(rotate_limit=15, p=0.5),
     # GaussNoise(p=0.2),
+    GridDistortion(p=0.5)
     # OneOf([
     #     OpticalDistortion(p=1),
-    #     GridDistortion(p=1),
-    #     # ElasticTransform(p=1),
+    #     ElasticTransform(p=1),
     # ], p=0.2),
     # Cutout(max_h_size=8, max_w_size=8, p=0.2),
 ])
