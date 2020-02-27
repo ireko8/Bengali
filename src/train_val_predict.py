@@ -178,7 +178,9 @@ def train(model,
             loss_b, _, _ = calc_loss(outputs, tb, criterion)
             loss = lam * loss_a + (1-lam) * loss_b
         else:
-            outputs = model(inputs)            
+            if rand > (1 + conf.mixup_prob) / 2:
+                inputs = sample["cutout"].to(device)
+            outputs = model(inputs)
             loss, _, pred_class = calc_loss(outputs, labels, criterion)
 
         all_preds.append(pred_class)

@@ -136,6 +136,9 @@ def main():
         if "resnet" in conf.arch or "resnext" in conf.arch:
             model_ft = ResNet(conf, arch_name=conf.arch,
                               input_size=conf.image_size)
+            model_ft.load_state_dict(
+                torch.load("result/baseline_2020_02_26_03_45_49/model_0.pkl")
+            )
         elif "densenet" in conf.arch:
             model_ft = DenseNet(conf, arch_name=conf.arch,
                                 input_size=conf.image_size)
