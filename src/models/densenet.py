@@ -29,7 +29,7 @@ class DenseNet(nn.Module):
                  conf,
                  arch_name='densenet121',
                  pretrained=True,
-                 input_channel=1,                 
+                 input_channel=3,                 
                  input_size=224):
         super(DenseNet, self).__init__()
         if "lpf" in arch_name:

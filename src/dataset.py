@@ -98,19 +98,19 @@ class BengalDataset(Dataset):
                 sample["mix1"] = self.augmix(image)
                 sample["mix2"] = self.augmix(image)
             else:
-                co = Cutout(max_h_size=8, max_w_size=8, p=1)
+                # co = Cutout(max_h_size=8, max_w_size=8, p=1)
                 images = [self.augment(image=image)['image']
                           for _ in range(3)]
                 image = np.concatenate(images, axis=-1)
-                cutout_image = [co(image=i)["image"]
-                                for i in images]
-                cutout_image = np.concatenate(cutout_image, axis=-1)
+                # cutout_image = [co(image=i)["image"]
+                #                 for i in images]
+                # cutout_image = np.concatenate(cutout_image, axis=-1)
 
         # image = (image - 0.06923) / 0.2052  # normalize
         image = np.moveaxis(image, -1, 0)
-        cutout_image = np.moveaxis(cutout_image, -1, 0)
+        # cutout_image = np.moveaxis(cutout_image, -1, 0)
         image = self.normalize(image)
-        cutout_image = self.normalize(cutout_image)
+        # cutout_image = self.normalize(cutout_image)
         
         if self.test != "test":
             label = [
@@ -121,7 +121,7 @@ class BengalDataset(Dataset):
             sample['label'] = np.array(label)
 
         sample['data'] = image.astype(np.float32)
-        sample["cutout"] = cutout_image.astype(np.float32)
+        # sample["cutout"] = cutout_image.astype(np.float32)
         return sample
     
 

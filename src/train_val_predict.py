@@ -178,8 +178,8 @@ def train(model,
             loss_b, _, _ = calc_loss(outputs, tb, criterion)
             loss = lam * loss_a + (1-lam) * loss_b
         else:
-            if rand > (1 + conf.mixup_prob) / 2:
-                inputs = sample["cutout"].to(device)
+            # if rand > (1 + conf.mixup_prob) / 2:
+            #     inputs = sample["cutout"].to(device)
             outputs = model(inputs)
             loss, _, pred_class = calc_loss(outputs, labels, criterion)
 
@@ -238,7 +238,8 @@ def validate(model, val_df, val_images,
     running_loss = 0.0
 
     # Iterate over data.
-    for i, samples in enumerate(dataloader):
+    pbar = tqdm(dataloader)
+    for i, samples in enumerate(pbar):
         with torch.set_grad_enabled(False):
             inputs = samples['data'].to(device)
             outputs = model(inputs)
@@ -249,6 +250,14 @@ def validate(model, val_df, val_images,
             all_preds.append(pred_class)            
             all_trues.append(labels.cpu().data.numpy())
             running_loss += loss.item() * inputs.size(0)
+            kaggle_score, each_scores = weighted_macro_recall(samples["label"], pred_class)
+            pbar.set_postfix({
+                "loss": loss.item(),
+                "kaggle": kaggle_score,
+                "graphen": each_scores[0],
+                "vowel": each_scores[1],
+                "consonant": each_scores[2]
+            })
 
     all_preds = np.concatenate(all_preds)
     all_trues = np.concatenate(all_trues)
