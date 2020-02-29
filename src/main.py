@@ -10,7 +10,7 @@ from dataset import val_split
 from utils import setup, count_parameter, get_lr, load_csv, now
 from loss import LabelSmoothedCE
 from train_val_predict import train, validate, predict
-from augment import train_transform, valid_transform, faa_transform
+from augment import train_transform, valid_transform
 from models.resnet import ResNet
 from models.densenet import DenseNet
 from models.efficientnet import EfficientNet
@@ -49,8 +49,6 @@ def train_model(train_df,
     log.info(
         f"Scheduler: CosineLR, period={conf.period}")
     train_ds, val_ds, train_images, val_images = ds['train'], ds['val'], ds['train_images'], ds['val_images']
-    val_ds.reset_index().to_csv("val_index.csv", index=False)
-    np.save("val_images.npy", val_images)
 
     # scheduler = optim.lr_scheduler.CyclicLR(
     #     optimizer, conf.eta_min, conf.init_lr, cycle_momentum=False,
@@ -68,7 +66,7 @@ def train_model(train_df,
 
             _, train_res = train(model, optimizer, # scheduler, 
                                  train_ds, train_images,
-                                 faa_transform,
+                                 train_transform,
                                  device, criterion)
 
             clf_loss = train_res['loss']
@@ -138,7 +136,7 @@ def main():
             model_ft = ResNet(conf, arch_name=conf.arch,
                               input_size=conf.image_size)
             model_ft.load_state_dict(
-                torch.load("result/baseline_2020_02_20_14_35_56/model_0.pkl")
+                torch.load("result/baseline_2020_02_29_04_11_46/model_0.pkl")
             )
         elif "densenet" in conf.arch:
             model_ft = DenseNet(conf, arch_name=conf.arch,
