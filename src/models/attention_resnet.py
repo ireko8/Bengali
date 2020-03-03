@@ -77,6 +77,17 @@ class Decoder(nn.Module):
         return x
 
 
+class SimpleDecoder(nn.Module):
+    def __init__(self, in_channels, out_channels, scse=False):
+        super(SimpleDecoder, self).__init__()
+        self.conv = Conv2dBN(in_channels, out_channels, 3, padding=1)
+
+    def forward(self, x, scale_factor):
+        x = F.relu(self.conv(x), inplace=True)
+        x = F.upsample(x, scale_factor=scale_factor, mode='bilinear', align_corners=True)
+        return x
+
+
 class SimpleAttentionNet(nn.Module):
     def __init__(self,
                  arch_name='se_resnet50',
@@ -228,14 +239,14 @@ class AttentionResNet(nn.Module):
             Conv2dBN(2048, 512, 3, padding=1), nn.ReLU(inplace=True),
             Conv2dBN(512, 256, 3, padding=1), nn.ReLU(inplace=True))
 
-        self.decoder4 = Decoder(256, 128, 64)
-        self.decoder3 = Decoder(64, 64, 64)
-        self.decoder2 = Decoder(64, 64, 64)
-        self.decoder1 = Decoder(64, 32, 64)
+        self.decoder4 = SimpleDecoder(2048, 64)
+        self.decoder3 = SimpleDecoder(1024, 64)
+        self.decoder2 = SimpleDecoder(512, 64)
+        self.decoder1 = SimpleDecoder(256, 64)
 
         self.logit = nn.Sequential(
             nn.Conv2d(64 * 3, 64, 3, padding=1), nn.ReLU(inplace=True),
-            nn.Conv2d(64, conf.gr_size, 1, padding=0))
+            nn.Conv2d(64, 1, 1, padding=0), nn.Sigmoid())
 
         self.pooling = base_model.pooling
         self.resnet = base_model
@@ -254,25 +265,9 @@ class AttentionResNet(nn.Module):
         vd = self.resnet.fc_vd(x)
         cd = self.resnet.fc_cd(x)
 
-        c = self.center(e4)
-
-        d4 = self.decoder4(c)
-        d3 = self.decoder3(d4)
-        d2 = self.decoder2(d3)
-        d1 = self.decoder1(d2)
-        # d0 = self.decoder0(d1)
-
-        h = torch.cat((d2,
-                       F.upsample(
-                           d3,
-                           scale_factor=2,
-                           mode='bilinear',
-                           align_corners=True),
-                       F.upsample(
-                           d4,
-                           scale_factor=4,
-                           mode='bilinear',
-                           align_corners=True)), dim=1)
+        h = torch.cat((self.decoder4(e4, scale_factor=4),
+                       self.decoder3(e3, scale_factor=2),
+                       self.decoder2(e2, scale_factor=1)), dim=1)
 
         logit = self.logit(h)
-        return [gr, vd, cd], logit
+        return np.array([gr, vd, cd]), logit

@@ -7,8 +7,8 @@ from tqdm import tqdm
 
 from config import conf
 
-HEIGHT = 137
-WIDTH = 236
+HEIGHT = conf.image_size[0]
+WIDTH = conf.image_size[1]
 width, height = conf.image_size
 train_images = pd.read_parquet("input/train.parquet")
 test_images = pd.read_parquet("input/test.parquet")
@@ -45,7 +45,7 @@ def resize(images, index):
     print(index)
     row_image = images.iloc[index]
     image = 255 - row_image.drop('image_id').values.astype(np.uint8).reshape(137, 236)
-    # image = cv2.resize(image , conf.image_size)
+    image = cv2.resize(image, conf.image_size)
     image = (image*(255.0/image.max())).astype(np.uint8)
     # image = crop_resize(image)
     return image
@@ -76,13 +76,13 @@ def dump_resized():
     std = np.sqrt(std / n - mean**2)
     print(mean, std)
     train_resized = np.stack(train_resized)
-    np.save(f"input/train_{width}x{height}_orig.npy", train_resized)
+    np.save(f"input/train_{width}x{height}.npy", train_resized)
 
     with Pool(16) as p:
         args = list(range(len(test_images)))
         test_resized = p.map(test_resize, args)        
 
-    np.save(f"input/test_{width}x{height}_orig.npy", np.stack(test_resized))
+    np.save(f"input/test_{width}x{height}.npy", np.stack(test_resized))
 
 
 dump_resized()

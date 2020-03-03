@@ -36,14 +36,14 @@ class BengalDataset(Dataset):
         return image, row_label
 
     @staticmethod
-    def mask_target(image, mask_size, label):
+    def mask_target(image, mask_size):
         mask_array = np.zeros((conf.gr_size, mask_size[0], mask_size[1]))
         mask = cv2.resize(image, mask_size) / 255
         mask = mask > 0.1
-        mask_array[label.astype(bool)] = mask.T
-        return mask_array.astype(np.float32)
+        return mask[np.newaxis, :, :].astype(np.float32)
 
     def normalize(self, image):
+        # return (image - 0.05549) / 0.172  # normalize
         return (image - 0.05503) / 0.1722
 
     def augmix(self, image, width=3, depth=1, alpha=1.):
@@ -88,8 +88,7 @@ class BengalDataset(Dataset):
         image, row_label = self.load_image(index)
         
         if conf.mask and self.test == "train":
-            sample["mask"] = self.mask_target(image, conf.mask_size,
-                                              row_label.grapheme_root)
+            sample["mask"] = self.mask_target(image, conf.mask_size)
         
         image = image[:, :, np.newaxis] / 255
         
@@ -97,20 +96,16 @@ class BengalDataset(Dataset):
             if conf.augmix:
                 sample["mix1"] = self.augmix(image)
                 sample["mix2"] = self.augmix(image)
+            elif conf.input_channels == 1:
+                image = self.augment(image=image)['image']
             else:
-                # co = Cutout(max_h_size=8, max_w_size=8, p=1)
                 images = [self.augment(image=image)['image']
                           for _ in range(3)]
                 image = np.concatenate(images, axis=-1)
-                # cutout_image = [co(image=i)["image"]
-                #                 for i in images]
-                # cutout_image = np.concatenate(cutout_image, axis=-1)
 
         # image = (image - 0.06923) / 0.2052  # normalize
         image = np.moveaxis(image, -1, 0)
-        # cutout_image = np.moveaxis(cutout_image, -1, 0)
         image = self.normalize(image)
-        # cutout_image = self.normalize(cutout_image)
         
         if self.test != "test":
             label = [
@@ -121,7 +116,6 @@ class BengalDataset(Dataset):
             sample['label'] = np.array(label)
 
         sample['data'] = image.astype(np.float32)
-        # sample["cutout"] = cutout_image.astype(np.float32)
         return sample
     
 

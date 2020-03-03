@@ -12,6 +12,7 @@ from loss import LabelSmoothedCE
 from train_val_predict import train, validate, predict
 from augment import train_transform, valid_transform
 from models.resnet import ResNet
+from models.attention_resnet import AttentionResNet
 from models.densenet import DenseNet
 from models.efficientnet import EfficientNet
 from config import conf
@@ -136,7 +137,7 @@ def main():
             model_ft = ResNet(conf, arch_name=conf.arch,
                               input_size=conf.image_size)
             model_ft.load_state_dict(
-                torch.load("result/baseline_2020_02_29_04_11_46/model_0.pkl")
+                torch.load("result/baseline_2020_03_03_03_11_20/model_0.pkl")
             )
         elif "densenet" in conf.arch:
             model_ft = DenseNet(conf, arch_name=conf.arch,
