@@ -27,6 +27,7 @@ def rand_bbox(size, lam):
     return bbx1, bby1, bbx2, bby2
 
 
+
 def cutmix_data(data, target):
     lam = np.random.beta(conf.beta, conf.beta)
     rand_index = torch.randperm(data.size(0)).cuda()
@@ -51,7 +52,7 @@ def criterion_for_each_target(criterion):
     return new_criterion
 
 
-def calc_loss(pred, labels, criterion):
+def calc_loss(pred, labels, criterion, train=False, ohem_ratio=1):
     pred_len = len(labels)
     pred_probs = list()
     pred_class = list()
@@ -64,6 +65,9 @@ def calc_loss(pred, labels, criterion):
         else:
             loss_i = criterion(px, labels[:, i]) 
         w = 2 if i == 0 else 1
+        if train:
+            loss_i, _ = torch.topk(loss_i, k=int(conf.batch_size * ohem_ratio))
+            # loss_i = loss_i / conf.accum_time
         loss += loss_i * w
     return loss, pred_probs, np.stack(pred_class, axis=1)
 
@@ -138,6 +142,7 @@ def train(model,
           aug,
           device,
           criterion,
+          epoch=None,
           undersampling=False):
 
     model.train()
@@ -174,14 +179,18 @@ def train(model,
         elif conf.mixup and rand < conf.mixup_prob:
             inputs, ta, tb, lam = cutmix_data(inputs, labels)
             outputs = model(inputs)
-            loss_a, _, pred_class = calc_loss(outputs, ta, criterion)
-            loss_b, _, _ = calc_loss(outputs, tb, criterion)
+
+            ratio = 0.8 ** (epoch // 40)
+            loss_a, _, pred_class = calc_loss(outputs, ta, criterion, train=True, ohem_ratio=ratio)
+            loss_b, _, _ = calc_loss(outputs, tb, criterion, train=True, ohem_ratio=ratio)
+
             loss = lam * loss_a + (1-lam) * loss_b
         else:
             outputs = model(inputs)
             loss, _, pred_class = calc_loss(outputs, labels, criterion)
 
         all_preds.append(pred_class)
+        loss = loss.mean()
         loss.backward()
 
         # statistics
@@ -247,6 +256,7 @@ def validate(model, val_df, val_images,
             loss, _, pred_class = calc_loss(outputs, labels, criterion)
             all_preds.append(pred_class)            
             all_trues.append(labels.cpu().data.numpy())
+            loss = loss.mean()
             running_loss += loss.item() * inputs.size(0)
             kaggle_score, each_scores = weighted_macro_recall(samples["label"], pred_class)
             pbar.set_postfix({

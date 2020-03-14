@@ -1,12 +1,12 @@
 class Config():
     def __init__(self, home=True):
         self.seed = 71
-        self.batch_size = 96
+        self.batch_size = 192
         self.accum_time = 1
         self.train_csv = 'input/train.csv'
-        self.train_images = 'input/train_128x128_orig.npy'
+        self.train_images = 'input/train_137x236.npy'
         self.test_csv = 'input/test_orig.csv'
-        self.test_images = 'input/test_128x128_orig.npy'
+        self.test_images = 'input/test_137x236.npy'
         self.npy = True
         
         self.device_name = 'cuda:0'
@@ -17,10 +17,10 @@ class Config():
         self.stratify = "random"
         self.n_splits = 5
         self.fold = 0
-        self.num_epoch = 100
+        self.num_epoch = 150
         self.period = 16
 
-        self.arch = "se_resnext50_32x4d"
+        self.arch = "se_resnet50"
         self.gr_size = 168
         self.vd_size = 11
         self.cd_size = 7
@@ -29,7 +29,7 @@ class Config():
         self.mask_size = (28, 28)        
 
         self.mixup = True
-        self.mixup_prob = 0.5
+        self.mixup_prob = 1
         self.alpha = 0.7
         self.beta = 0.7
 
@@ -38,7 +38,7 @@ class Config():
 
         self.init_lr = 2e-4
         self.eta_min = 1e-6
-        self.num_workers = 16 if home else 4
+        self.num_workers = 8 if home else 4
         self.classes_num = 1
     
 
