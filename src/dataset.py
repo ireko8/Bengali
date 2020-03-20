@@ -142,11 +142,18 @@ def val_split(df, images, val_size=0.2, fold=0, seed=71):
     else:
         train_images = images.iloc[tr_ind].reset_index(drop=True)
         val_images = images.iloc[te_ind].reset_index(drop=True)
-    return {'train': train_df, 'val': val_df, 'train_images': train_images, 'val_images': val_images}
+
+    df = {'train': train_df,
+          'val': val_df,
+          'tr_ind': tr_ind,
+          'te_ind': te_ind,
+          'train_images': train_images,
+          'val_images': val_images}
+    return df
 
 
 def worker_init_fn(worker_id):                                                 
-    np.random.seed(conf.seed*2 + worker_id)
+    np.random.seed(conf.seed*200 + worker_id)
 
 
 def make_loader(df,
@@ -168,7 +175,7 @@ def make_loader(df,
         drop_last = True
         if conf.weighted_sample:
             class_count = df.grapheme_root.value_counts()
-            class_count = 1 / class_count
+            class_count = 1 / (class_count)
             df['weight'] = df.grapheme_root.map(class_count)
             sampler = WeightedRandomSampler(df.weight, len(df))
             shuffle=False

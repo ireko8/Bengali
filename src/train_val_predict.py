@@ -51,7 +51,7 @@ def criterion_for_each_target(criterion):
     return new_criterion
 
 
-def calc_loss(pred, labels, criterion):
+def calc_loss(pred, labels, criterion, train=False):
     pred_len = len(labels)
     pred_probs = list()
     pred_class = list()
@@ -138,6 +138,7 @@ def train(model,
           aug,
           device,
           criterion,
+          epoch=None,
           undersampling=False):
 
     model.train()
@@ -174,14 +175,17 @@ def train(model,
         elif conf.mixup and rand < conf.mixup_prob:
             inputs, ta, tb, lam = cutmix_data(inputs, labels)
             outputs = model(inputs)
-            loss_a, _, pred_class = calc_loss(outputs, ta, criterion)
-            loss_b, _, _ = calc_loss(outputs, tb, criterion)
+
+            loss_a, _, pred_class = calc_loss(outputs, ta, criterion, train=True)
+            loss_b, _, _ = calc_loss(outputs, tb, criterion, train=True)
+            
             loss = lam * loss_a + (1-lam) * loss_b
         else:
             outputs = model(inputs)
             loss, _, pred_class = calc_loss(outputs, labels, criterion)
 
         all_preds.append(pred_class)
+        loss = loss.mean()
         loss.backward()
 
         # statistics
@@ -247,6 +251,7 @@ def validate(model, val_df, val_images,
             loss, _, pred_class = calc_loss(outputs, labels, criterion)
             all_preds.append(pred_class)            
             all_trues.append(labels.cpu().data.numpy())
+            loss = loss.mean()
             running_loss += loss.item() * inputs.size(0)
             kaggle_score, each_scores = weighted_macro_recall(samples["label"], pred_class)
             pbar.set_postfix({
@@ -289,15 +294,21 @@ def predict(model, test_df,
         test="test",
         augment=aug)
 
-    all_preds = []
+    gr_preds = []
+    cd_preds = []
+    vd_preds = []
     # Iterate over data.
-    t = dataloader
+    t = tqdm(dataloader)
     for i, samples in enumerate(t):
         with torch.set_grad_enabled(False):
             inputs = samples['data'].to(device)
-            outputs = model(inputs)
-            for px in outputs:
-                all_preds.append(px.argmax(dim=1).cpu().data.numpy())
+            px = model(inputs)
 
-    all_preds = np.concatenate(all_preds)
-    return all_preds
+            gr_preds.append(px[0].softmax(dim=1).cpu().data.numpy())
+            vd_preds.append(px[1].softmax(dim=1).cpu().data.numpy())
+            cd_preds.append(px[2].softmax(dim=1).cpu().data.numpy())
+
+    gr_preds = np.concatenate(gr_preds)
+    vd_preds = np.concatenate(vd_preds)
+    cd_preds = np.concatenate(cd_preds)
+    return np.concatenate([gr_preds, vd_preds, cd_preds], axis=1)

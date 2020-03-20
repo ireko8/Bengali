@@ -1,5 +1,6 @@
+import cv2
 from albumentations import Compose, OneOf, Normalize, ShiftScaleRotate
-from albumentations import GaussNoise, OpticalDistortion, GridDistortion
+from albumentations import GaussNoise, OpticalDistortion, GridDistortion, IAAAffine, IAAPerspective
 from albumentations import Cutout, Rotate, ElasticTransform
 
 augmix_transform = [
@@ -20,11 +21,19 @@ faa_transform = Compose([
     # ], p=0.2),
     Cutout(num_holes=7, max_h_size=18, max_w_size=2, p=0.05),
 ])    
-    
+
+# train_transform = Compose([
+#     OneOf([
+#         ShiftScaleRotate(scale_limit=.15, rotate_limit=20, border_mode=cv2.BORDER_CONSTANT),
+#         IAAAffine(shear=20, mode='constant'),
+#         IAAPerspective(),
+#     ])
+# ])
+
 train_transform = Compose([
     ShiftScaleRotate(rotate_limit=15, p=0.5),
     # GaussNoise(p=0.2),
-    GridDistortion(p=0.5)
+    # GridDistortion(p=0.5)
     # OneOf([
     #     OpticalDistortion(p=1),
     #     ElasticTransform(p=1),

@@ -16,8 +16,8 @@ class Config():
         
         self.stratify = "random"
         self.n_splits = 5
-        self.fold = 0
-        self.num_epoch = 100
+        self.fold = 4
+        self.num_epoch = 150
         self.period = 16
 
         self.arch = "se_resnext50_32x4d"
@@ -29,14 +29,14 @@ class Config():
         self.mask_size = (28, 28)        
 
         self.mixup = True
-        self.mixup_prob = 0.5
+        self.mixup_prob = 1
         self.alpha = 0.7
         self.beta = 0.7
 
         self.augmix = False
         self.augmix_prob = 1
 
-        self.init_lr = 2e-4
+        self.init_lr = 2e-5
         self.eta_min = 1e-6
         self.num_workers = 16 if home else 4
         self.classes_num = 1

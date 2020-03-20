@@ -4,7 +4,7 @@ from torch import nn
 import torchvision
 import pretrainedmodels
 
-from .head import Head
+from .head import Head, AttentionHead
 from .pooling import GeM
 from .models_lpf import resnet as lpf_resnet
     
