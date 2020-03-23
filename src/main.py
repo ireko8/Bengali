@@ -8,7 +8,7 @@ import pandas as pd
 
 from dataset import val_split
 from utils import setup, count_parameter, get_lr, load_csv, now
-from loss import LabelSmoothedCE
+from loss import ReducedFocalLoss
 from train_val_predict import train, validate, predict
 from augment import train_transform, valid_transform
 from models.resnet import ResNet
@@ -51,23 +51,13 @@ def train_model(train_df,
         f"Scheduler: CosineLR, period={conf.period}")
     train_ds, val_ds, train_images, val_images = ds['train'], ds['val'], ds['train_images'], ds['val_images']
 
-    # scheduler = optim.lr_scheduler.CyclicLR(
-    #     optimizer, conf.eta_min, conf.init_lr, cycle_momentum=False,
-    #     step_size_up=300,
-    # )
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, 'max',
         patience=20, threshold=0.001,
         threshold_mode="abs",
     )
-    # scheduler = torch.optim.lr_scheduler.OneCycleLR(
-    #     optimizer,
-    #     max_lr=0.01,
-    #     steps_per_epoch=len(train_ds),
-    #     epochs=num_epoch
-    # )
     
-    for epoch in range(59, num_epoch):
+    for epoch in range(42, num_epoch):
         try:
             start = time()
 
@@ -111,10 +101,10 @@ def train_model(train_df,
 
     # load best model weights
     model.load_state_dict(best_model_wts)
-    test_preds = predict(model, test_df, test_images, valid_transform,
-                         device)
+    # test_preds = predict(model, test_df, test_images, valid_transform,
+    #                      device)
 
-    return model, best_val_preds, test_preds
+    return model, best_val_preds  # , test_preds
 
 
 def main():
@@ -143,8 +133,8 @@ def main():
             model_ft = ResNet(conf, arch_name=conf.arch,
                               input_size=conf.image_size)
             model_ft.load_state_dict(
-                torch.load(f"result/baseline_2020_03_16_02_54_29/model_{i}.pkl")
-            )                           
+                torch.load("result/baseline_2020_03_21_13_01_08/model_0.pkl")
+            )
         elif "densenet" in conf.arch:
             model_ft = DenseNet(conf, arch_name=conf.arch,
                                 input_size=conf.image_size)
@@ -158,7 +148,7 @@ def main():
         ]
         criterion = [c.to(device) for c in criterion]
 
-        model_ft, val_preds, test_preds = train_model(
+        model_ft, val_preds = train_model(
             train_df,
             train_images,
             test_df,
@@ -173,7 +163,7 @@ def main():
 
         torch.save(model_ft.state_dict(), result_dir/f'model_{i}.pkl')
         np.save(result_dir/f'val_preds_{i}.npy', val_preds)
-        np.save(result_dir/f'test_preds_{i}.npy', test_preds)
+        # np.save(result_dir/f'test_preds_{i}.npy', test_preds)
 
 
 if __name__ == "__main__":

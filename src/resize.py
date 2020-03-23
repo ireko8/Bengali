@@ -45,7 +45,7 @@ def resize(images, index):
     print(index)
     row_image = images.iloc[index]
     image = 255 - row_image.drop('image_id').values.astype(np.uint8).reshape(137, 236)
-    image = cv2.resize(image, conf.image_size)
+    # image = cv2.resize(image, conf.image_size)
     image = (image*(255.0/image.max())).astype(np.uint8)
     # image = crop_resize(image)
     return image
@@ -61,7 +61,7 @@ def test_resize(index):
 
 def dump_resized():
 
-    with Pool(16) as p:
+    with Pool(8) as p:
         args = list(range(len(train_images)))
         train_resized = p.map(train_resize, args)        
 
@@ -78,7 +78,7 @@ def dump_resized():
     train_resized = np.stack(train_resized)
     np.save(f"input/train_{width}x{height}.npy", train_resized)
 
-    with Pool(16) as p:
+    with Pool(8) as p:
         args = list(range(len(test_images)))
         test_resized = p.map(test_resize, args)        
 

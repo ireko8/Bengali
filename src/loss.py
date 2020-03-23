@@ -75,7 +75,7 @@ class ReducedFocalLoss(nn.Module):
         factor = torch.where(pt > self.th, factor, torch.ones_like(factor))
         loss = loss * factor
 
-        return loss.mean()
+        return loss
 
 
 class ArcFaceLoss(nn.modules.Module):

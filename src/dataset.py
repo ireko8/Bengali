@@ -153,7 +153,7 @@ def val_split(df, images, val_size=0.2, fold=0, seed=71):
 
 
 def worker_init_fn(worker_id):                                                 
-    np.random.seed(conf.seed*200 + worker_id)
+    np.random.seed(conf.seed + worker_id)
 
 
 def make_loader(df,

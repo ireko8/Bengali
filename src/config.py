@@ -1,7 +1,7 @@
 class Config():
     def __init__(self, home=True):
         self.seed = 71
-        self.batch_size = 96
+        self.batch_size = 128
         self.accum_time = 1
         self.train_csv = 'input/train.csv'
         self.train_images = 'input/train_128x128_orig.npy'
@@ -16,11 +16,11 @@ class Config():
         
         self.stratify = "random"
         self.n_splits = 5
-        self.fold = 4
+        self.fold = 0
         self.num_epoch = 150
         self.period = 16
 
-        self.arch = "se_resnext50_32x4d"
+        self.arch = "se_resnet50"
         self.gr_size = 168
         self.vd_size = 11
         self.cd_size = 7
@@ -36,7 +36,7 @@ class Config():
         self.augmix = False
         self.augmix_prob = 1
 
-        self.init_lr = 2e-5
+        self.init_lr = 2e-4
         self.eta_min = 1e-6
         self.num_workers = 16 if home else 4
         self.classes_num = 1

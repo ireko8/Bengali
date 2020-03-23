@@ -4,7 +4,7 @@ from torch import nn
 import torchvision
 import pretrainedmodels
 
-from .head import Head, AttentionHead
+from .head import Head, BranchedHead
 from .pooling import GeM
 from .models_lpf import resnet as lpf_resnet
     
@@ -56,7 +56,7 @@ class ResNet(nn.Module):
             self.dim_feats = self.base_model.fc.in_features  # = 2048
 
         head_input_size = self.dim_feats
-        self.fc_gr = Head(head_input_size, conf.gr_size)
+        self.fc_gr = Head(head_input_size, conf.gr_size)        
         self.fc_vd = Head(head_input_size, conf.vd_size)
         self.fc_cd = Head(head_input_size, conf.cd_size)
         self.out_size = ksize
@@ -80,8 +80,4 @@ class ResNet(nn.Module):
         # x = torch.cat([avgpool, maxpool], dim=1)
         x = self.pooling(l4).view(-1, self.dim_feats)
 
-        gr = self.fc_gr(x)
-        vd = self.fc_vd(x)
-        cd = self.fc_cd(x)
-
-        return np.array([gr, vd, cd])
+        return self.out(x)

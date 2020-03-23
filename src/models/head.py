@@ -8,17 +8,43 @@ from torch import nn
 class Head(nn.Module):
     def __init__(self, input_size, output_size, dropout=0.2):
         super(Head, self).__init__()
-        middle_size = max(output_size, input_size // 4)
         self.head = nn.Sequential(
-            nn.Linear(input_size, middle_size),
-            nn.BatchNorm1d(middle_size),
+            nn.Linear(input_size, output_size),
+            nn.BatchNorm1d(output_size),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(middle_size, output_size)
         )
 
     def forward(self, x):
         return self.head(x)
+
+
+class BranchedHead(nn.Module):
+    def __init__(self, conf, input_size, dropout=0.2):
+        super(BranchedHead, self).__init__()
+        middle_size = 512
+        self.gr1 = Head(input_size, middle_size)
+        self.vd1 = Head(input_size, middle_size)
+        self.cd1= Head(input_size, middle_size)
+        self.center = nn.Sequential(
+            Head(input_size, 1280),
+            Head(1280, middle_size)
+        )
+        self.fc_gr = nn.Linear(middle_size, conf.gr_size)        
+        self.fc_vd = nn.Linear(middle_size, conf.vd_size)
+        self.fc_cd = nn.Linear(middle_size, conf.cd_size)
+
+    def forward(self, x):
+        gr = self.gr1(x)
+        vd = self.vd1(x)
+        cd = self.cd1(x)
+        center = self.center(x)
+
+        gr = self.fc_gr(gr+center)
+        vd = self.fc_vd(vd+center)
+        cd = self.fc_cd(cd+center)
+
+        return np.array([gr, vd, cd])
 
 
 class AttentionHead(nn.Module):
